@@ -52,9 +52,11 @@ public class ColliderMap {
         for (int i = y - 3; i <= y + 3; i++) {
             for (int j = x - 3; j <= x + 3; j++) {
                 if (IsValid(j, i)) {
-                    
+
                     //if (tileMap[i, j].colliders.Count > 0)
                     //{
+                    int count = tileMap[i, j].colliders.Count;
+                   
                         for (int k = 0; k < tileMap[i, j].colliders.Count; k++)
                         {
                             Bird b = tileMap[i, j].colliders[k];
@@ -62,6 +64,10 @@ public class ColliderMap {
                             {
                                 birds.Add(b);
                             }
+                        if (count > 5) {
+                            k = k + 1;
+                        }
+                                
                            /* int c = 0;
                             for (int o = 0; o < birds.Count; o++)
                                 if (birds[o].EqualsBird(b))

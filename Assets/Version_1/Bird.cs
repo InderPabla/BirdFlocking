@@ -62,7 +62,7 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
         if (active == true)
         {
 
-            sep = 1f+(0.5f* (1f-(fps/60f)));
+            sep = 1f+(0.25f* (1f-(fps/60f)));
             position = transform.position;
             List<Bird> birds = map.GetAllBirdsWithinRange((int)position.x, (int)position.y, attr, transform.position, this);
             //transZ = FixAngle(transform.eulerAngles.z);
