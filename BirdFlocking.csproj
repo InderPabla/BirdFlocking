@@ -78,6 +78,7 @@
     <Compile Include="Assets\Version_1\Bird.cs" />
     <Compile Include="Assets\Version_1\BirdFlocker.cs" />
     <Compile Include="Assets\Version_1\BirdTest.cs" />
+    <Compile Include="Assets\Version_1\ButtonBehaviour.cs" />
     <Compile Include="Assets\Version_1\ColliderMap.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

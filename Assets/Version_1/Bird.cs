@@ -25,7 +25,8 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
     private Vector3 oldPosition;
     private Vector3 position;
     private float transZ;
-    
+    private bool isBorder = false;
+    private bool isPredetor = false;
     // Use this for initialization
     void Start () {
         Camera cam = Camera.main;
@@ -52,17 +53,20 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
 
     }
 
-    float sep = 1.25f;
-    float attr = 2.1f;
+    float sep = 1.25f; // 1f+(0.5f* (1f-(fps/60f)));
+    float attr = 2.1f; //2.1
     bool inCollsion = false;
     float chosenAngleOfChange = 0;
+    bool forceRelocate = false;
+    float wallCount = 0;
+    public float affect = 1f;
+
     // Update is called once per frame
     public void UpdateOnCall (float fps) {
         
         if (active == true)
         {
-
-            sep = 1f+(0.25f* (1f-(fps/60f)));
+            sep = 1.05f+(0.5f* (1f-(fps/60f)));
             position = transform.position;
             List<Bird> birds = map.GetAllBirdsWithinRange((int)position.x, (int)position.y, attr, transform.position, this);
             //transZ = FixAngle(transform.eulerAngles.z);
@@ -70,104 +74,177 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
             float avgHeading = 0;
             float headingCount = 0;
             Vector3 avgHeadingUnit = Vector3.zero;
-            float wallCount = 0;
+            wallCount = 0;
             Vector3 avgBirdHeadingUnit = Vector3.zero;
-            float birdCount = 0;
+            //float birdCount = 0;
 
             //float avgBreakAwayHeading = 0;
             //float breakAwayHeadingCount = 0;
-            
 
-            for (int i = 0; i < birds.Count; i++)
-            {
-                if (birds[i] != this)
+            affect = 1f;
+
+            if (isPredetor == true) {
+                for (int i = 0; i < birds.Count; i++)
                 {
-                    Vector3 positionOther = birds[i].transform.position;
-                    Vector2 dif = position - positionOther;
-                    float distance = Vector3.Distance(position, positionOther);
-                    float angle = Mathf.Atan2(dif.y, dif.x) * Mathf.Rad2Deg;
-                    angle = FixAngle(angle);
-                    angle -= 90f;
-                    angle = FixAngle(angle);
-                    angle -= (transZ);
-                    angle = FixAngle(angle);
-
-
-                    if (birds[i].active == false && !(angle >= (360f - 90f) || angle <= (90f)))
+                    if (birds[i] != this)
                     {
-                        float otherAngle = FixAngle(transZ);
-                        if (inCollsion == false) {
-                            inCollsion = true;
-
-                            if (otherAngle >= 0 && otherAngle < 90)
-                                chosenAngleOfChange = -10f;
-                            else if (otherAngle >= 90 && otherAngle < 180)
-                                chosenAngleOfChange = 10f;
-                            else if (otherAngle >= 180 && otherAngle < 270)
-                                chosenAngleOfChange = -10f;
-                            else if (otherAngle >= 270 && otherAngle <= 360)
-                                chosenAngleOfChange = 10f;
-                        }
-
-                        otherAngle = FixAngle(otherAngle + chosenAngleOfChange);
-
-                        /*if (otherAngle >= 0 && otherAngle < 90)
-                            otherAngle = FixAngle(otherAngle - 90f);
-                        else if (otherAngle >= 90 && otherAngle < 180)
-                            otherAngle = FixAngle(otherAngle + 90f);
-                        else if (otherAngle >= 180 && otherAngle < 270)
-                            otherAngle = FixAngle(otherAngle + 90f);
-                        else if (otherAngle >= 270 && otherAngle <= 360)
-                            otherAngle = FixAngle(otherAngle - 90f);*/
+                        Vector3 positionOther = /*birds[i].transform.position*/ ClosestLocation(position, birds[i].transform.position); ;
+                        Vector2 dif = position - positionOther;
+                        float distance = Vector3.Distance(position, positionOther);
+                        float angle = Mathf.Atan2(dif.y, dif.x) * Mathf.Rad2Deg;
+                        float otherAffect = birds[i].affect;
+                        angle = FixAngle(angle);
+                        angle -= 90f;
+                        angle = FixAngle(angle);
+                        angle -= (transZ);
+                        angle = FixAngle(angle);
 
 
-
-                        headingCount += 10000f;
-                        avgHeadingUnit += (new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0)* 10000f);
-
-                        wallCount++;
-                    }
-                    else if (!(angle >= (360f - 40f) || angle <= (40f)))
-                    {
-                        birdCount++;
-                        if (distance < sep)
+                        if (birds[i].active == false && !(angle >= (360f - 90f) || angle <= (90f)))
                         {
-                            //breakAwayHeadingCount++;
-                            /*float transZ2 = FixAngle(birds[i].transform.eulerAngles.z);
-                            Vector2 dif2 = positionOther - position;
-                            float angle2 = Mathf.Atan2(dif2.y, dif2.x) * Mathf.Rad2Deg;
-                            angle2 -= 90f;
-                            angle2 = FixAngle(angle2);
-                            angle2 -= (transZ2);
-                            angle2 = FixAngle(angle2);
+                            float otherAngle = FixAngle(transZ);
+                            if (inCollsion == false)
+                            {
+                                inCollsion = true;
 
-                            avgBreakAwayHeading += FixAngle(angle2);*/
+                                if (otherAngle >= 0 && otherAngle < 90)
+                                    chosenAngleOfChange = -10f;
+                                else if (otherAngle >= 90 && otherAngle < 180)
+                                    chosenAngleOfChange = 10f;
+                                else if (otherAngle >= 180 && otherAngle < 270)
+                                    chosenAngleOfChange = -10f;
+                                else if (otherAngle >= 270 && otherAngle <= 360)
+                                    chosenAngleOfChange = 10f;
+                            }
 
-                            headingCount++;
+                            otherAngle = FixAngle(otherAngle + chosenAngleOfChange);
+                            affect = 10f;
 
-                            float otherAngle = FixAngle(birds[i].transZ);
-                            otherAngle -= 180f;
-                            otherAngle = FixAngle(otherAngle);
+                            headingCount += 1000f;
+                            avgHeadingUnit += (new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0) * 1000f);
 
-                            avgHeading += otherAngle > 180f ? (360f - otherAngle) : otherAngle;
-                            avgHeadingUnit += new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0);
+                            wallCount++;
                         }
-                        else if (distance < attr)
+                        else if (!(angle >= (360f - 40f) || angle <= (40f)) && birds[i].active == true)
                         {
+                            //birdCount++;
+                            if (distance < sep && birds[i].isPredetor)
+                            {
 
-                            headingCount++;
 
-                            float otherAngle = FixAngle(birds[i].transZ);
-                            //otherAngle -= 90f;
-                            otherAngle = FixAngle(otherAngle);
+                                headingCount += otherAffect;
 
-                            avgHeading += otherAngle > 180f ? (360f - otherAngle) : otherAngle; //potential fix?
-                            avgHeadingUnit += new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0);
+                                float otherAngle = FixAngle(birds[i].transZ);
+                                otherAngle -= 180f;
+                                otherAngle = FixAngle(otherAngle);
+
+                                avgHeadingUnit += new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0) * otherAffect;
+                            }
+                            else if (distance < attr)
+                            {
+
+                                headingCount += 1;
+
+                                float otherAngle = FixAngle(birds[i].transZ);
+                                //otherAngle -= 90f;
+                                otherAngle = FixAngle(otherAngle);
+
+                                avgHeadingUnit += new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0);
+                            }
+
                         }
-                        
                     }
                 }
             }
+            else
+            {
+                for (int i = 0; i < birds.Count; i++)
+                {
+                    if (birds[i] != this)
+                    {
+                        Vector3 positionOther = /*birds[i].transform.position*/ ClosestLocation(position, birds[i].transform.position); ;
+                        Vector2 dif = position - positionOther;
+                        float distance = Vector3.Distance(position, positionOther);
+                        float angle = Mathf.Atan2(dif.y, dif.x) * Mathf.Rad2Deg;
+                        float otherAffect = birds[i].affect;
+                        angle = FixAngle(angle);
+                        angle -= 90f;
+                        angle = FixAngle(angle);
+                        angle -= (transZ);
+                        angle = FixAngle(angle);
+
+
+                        if (birds[i].active == false && !(angle >= (360f - 90f) || angle <= (90f)) )
+                        {
+                            float otherAngle = FixAngle(transZ);
+                            if (inCollsion == false)
+                            {
+                                inCollsion = true;
+
+                                if (otherAngle >= 0 && otherAngle < 90)
+                                    chosenAngleOfChange = -10f;
+                                else if (otherAngle >= 90 && otherAngle < 180)
+                                    chosenAngleOfChange = 10f;
+                                else if (otherAngle >= 180 && otherAngle < 270)
+                                    chosenAngleOfChange = -10f;
+                                else if (otherAngle >= 270 && otherAngle <= 360)
+                                    chosenAngleOfChange = 10f;
+                            }
+
+                            otherAngle = FixAngle(otherAngle + chosenAngleOfChange);
+                            affect = 10f;
+
+                            headingCount += 1000f;
+                            avgHeadingUnit += (new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0) * 1000f);
+
+                            wallCount++;
+                        }
+                        else if (!(angle >= (360f - 40f) || angle <= (40f)) && birds[i].active == true)
+                        {
+                            //birdCount++;
+                            if (birds[i].isPredetor == true)
+                            {
+                                headingCount += 10f;
+
+                                float otherAngle = FixAngle(birds[i].transZ);
+                                otherAngle -= 180f;
+                                otherAngle = FixAngle(otherAngle);
+
+                                avgHeadingUnit += new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0) * 10f;
+                            }
+                            else
+                            {
+                                if (distance < sep)
+                                {
+
+
+                                    headingCount += otherAffect;
+
+                                    float otherAngle = FixAngle(birds[i].transZ);
+                                    otherAngle -= 180f;
+                                    otherAngle = FixAngle(otherAngle);
+
+                                    avgHeadingUnit += new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0) * otherAffect;
+                                }
+                                else if (distance < attr)
+                                {
+
+                                    headingCount += 1;
+
+                                    float otherAngle = FixAngle(birds[i].transZ);
+                                    //otherAngle -= 90f;
+                                    otherAngle = FixAngle(otherAngle);
+
+                                    avgHeadingUnit += new Vector3(Mathf.Cos(Mathf.Deg2Rad * otherAngle), Mathf.Sin(Mathf.Deg2Rad * otherAngle), 0);
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            
 
             if (wallCount == 0f)
                 inCollsion = false;
@@ -177,64 +254,9 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
                 avgHeadingUnit /= headingCount;
                 avgHeading = FixAngle(Mathf.Atan2(avgHeadingUnit.y, avgHeadingUnit.x)*Mathf.Rad2Deg);
 
-
-                /*avgHeading = avgHeading / headingCount;
-                float thisHeading = transZ > 180f ? (360f - transZ) : transZ;
-
-                if (avgHeading < 0f && thisHeading < 0f)
-                {
-                    if (avgHeading < thisHeading)
-                    {
-                        transZ -= 5f;
-                    }
-                    else if (avgHeading > thisHeading)
-                    {
-                        transZ += 5f;
-                    }
-                }
-                else if (avgHeading > 0f && thisHeading > 0f)
-                {
-                    if (avgHeading < thisHeading)
-                    {
-                        transZ -= 5f;
-                    }
-                    else if (avgHeading > thisHeading)
-                    {
-                        transZ += 5f;
-                    }
-                }
-                else if (avgHeading > 0f && thisHeading < 0f)
-                {
-                    float distanceRight = avgHeading + (thisHeading * -1f);
-                    float distanceLeft = (180f- avgHeading) + (thisHeading * 180f);
-
-                    if (distanceRight > distanceLeft)
-                    {
-                        transZ += 5f;
-                    }
-                    else if(distanceRight < distanceLeft)
-                    {
-                        transZ -= 5f;
-                    }
-                }
-                else if (avgHeading < 0f && thisHeading > 0f)
-                {
-                    float distanceRight = thisHeading + (avgHeading * -1f);
-                    float distanceLeft = (180f - thisHeading) + (avgHeading * 180f);
-
-                    if (distanceRight > distanceLeft)
-                    {
-                        transZ += 5f;
-                    }
-                    else if (distanceRight < distanceLeft)
-                    {
-                        transZ -= 5f;
-                    }
-                }*/
-
                 float turnSpeed = 5f;
-                if (wallCount > 0f)
-                    turnSpeed = 15f;
+                /*if (wallCount > 0f)
+                    turnSpeed = 15f;*/
                 if (avgHeading > transZ)
                 {
 
@@ -284,50 +306,9 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
             else {
                 ren.material.color = Color.red;
             }
-        
-            /*if (breakAwayHeadingCount > 0)
-            {
-                avgBreakAwayHeading = avgBreakAwayHeading / breakAwayHeadingCount;
 
-                if (avgBreakAwayHeading > transZ)
-                {
-
-                    float distanceRight = avgBreakAwayHeading - transZ;
-                    float distanceLeft = transZ + (360f - avgBreakAwayHeading);
-
-                    if (distanceLeft > distanceRight)
-                    {
-                        transZ += 180f;//transZ -= 2f;
-                    }
-                    else if (distanceLeft < distanceRight)
-                    {
-                        transZ += 180f;//transZ += 2f;
-                    }
-                    else
-                        transZ += 180f;
-                }
-                else if (avgBreakAwayHeading < transZ)
-                {
-                    float distanceLeft = transZ - avgBreakAwayHeading;
-                    float distanceRight = avgBreakAwayHeading + (360f - transZ);
-
-                    if (distanceLeft > distanceRight)
-                    {
-                        transZ += 180f;//transZ -= 2f;
-                    }
-                    else if (distanceLeft < distanceRight)
-                    {
-                        transZ += 180f;//transZ += 2f;
-                    }
-                    else
-                        transZ += 180f;
-                }
-                else
-                    transZ += 180f;
-
-                transZ = FixAngle(transZ);
-            }*/
-
+            if(isPredetor)
+                ren.material.color = Color.blue;
 
             if (position.x >= width)
             {
@@ -350,12 +331,80 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
         }
     }
 
+
+    public Vector3 ClosestLocation(Vector3 p, Vector3 otherPoint) {
+        float dX = Mathf.Abs(otherPoint.x - p.x);
+        float dY = Mathf.Abs(otherPoint.y - p.y);
+        float x = otherPoint.x;
+        float y = otherPoint.y;
+
+        // now see if the distance between birds is closer if going off one
+        // side of the map and onto the other.
+        if (Mathf.Abs(width - otherPoint.x + p.x) < dX)
+        {
+            dX = width - otherPoint.x + p.x;
+            x = otherPoint.x - width;
+        }
+        if (Mathf.Abs(width - p.x + otherPoint.x) < dX)
+        {
+            dX = width - p.x + otherPoint.x;
+            x = otherPoint.x + width;
+        }
+
+        if (Mathf.Abs(height - otherPoint.y + p.y) < dY)
+        {
+            dY = height - otherPoint.y + p.y;
+            y = otherPoint.y - height;
+        }
+        if (Mathf.Abs(height - p.y + otherPoint.y) < dY)
+        {
+            dY = height - p.y + otherPoint.y;
+            y = otherPoint.y + height;
+        }
+
+        return new Vector3(x, y);
+    }
+
+
+    public bool IsActive() {
+        return active;
+    }
+
+    public void Hide() {
+        map.RemoveBirdFromTile((int)transform.position.x, (int)transform.position.y, this);
+        GetComponent<Collider2D>().enabled = false;
+        GetComponent<MeshRenderer>().enabled = false;
+    }
+
+    public void Show() {
+        map.AddBirdToTile((int)transform.position.x, (int)transform.position.y, this);
+        GetComponent<Collider2D>().enabled = true;
+        GetComponent<MeshRenderer>().enabled = true;
+    }
+
+    public void ForceRelocate() {
+        forceRelocate = true;
+        Invoke("RemoveForceRelocate",0.1f);
+    }
+
+    public void RemoveForceRelocate() {
+        forceRelocate = false;
+    }
+
     public void UpdatePhysics() {
+
+        if (wallCount > 0f && forceRelocate == true)
+        {
+            position = new Vector3(UnityEngine.Random.Range(1f, width - 1f), UnityEngine.Random.Range(1f, height - 1f), 0f);
+            forceRelocate = false;
+        }
+        
 
         map.RemoveBirdFromTile((int)oldPosition.x, (int)oldPosition.y, this);
 
         map.AddBirdToTile((int)position.x, (int)position.y, this);
-        oldPosition = transform.position;
+        //oldPosition = transform.position;
+        oldPosition = position;
         transform.position = position;
         Vector3 vecAngle = new Vector3(0f, 0f, transZ);
         transform.eulerAngles = vecAngle;
@@ -426,4 +475,35 @@ public class Bird : MonoBehaviour, IEquatable<Bird>{
         return false;
     }
 
+    public void RemoveFromWorld() {
+        Hide();
+        Destroy(this.gameObject);
+    }
+
+    public void RemoveAvtiveBirdFromWorld()
+    {
+        map.RemoveBirdFromTile((int)oldPosition.x, (int)oldPosition.y, this);
+        map.RemoveBirdFromTile((int)transform.position.x, (int)transform.position.y, this);
+        GetComponent<Collider2D>().enabled = false;
+        GetComponent<MeshRenderer>().enabled = false;
+
+        Destroy(this.gameObject);
+    }
+
+    public void SetIsBorder(bool isBorder) {
+        this.isBorder = isBorder;
+    }
+
+    public bool IsBorder()
+    {
+        return isBorder;
+    }
+
+    public void SetIsPredetor(bool pred) {
+        isPredetor = true;
+    }
+
+    public bool IsPredetor() {
+        return isPredetor;
+    }
 }
